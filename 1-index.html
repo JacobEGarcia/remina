@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>REMINA: THE HELLSTAR</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;font-family:'Courier New',monospace;color:#c9b8a8;-webkit-user-select:none;user-select:none;touch-action:none}
+  #c{position:fixed;inset:0;display:block}
+  .ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 30%,rgba(60,8,10,.92),rgba(0,0,0,.97) 70%);z-index:10;padding:20px;box-sizing:border-box}
+  h1{font-size:clamp(28px,7vw,64px);letter-spacing:.25em;margin:0 0 6px;color:#e8d9c4;text-shadow:0 0 24px #a02020,0 0 60px #601010;font-weight:700}
+  .sub{letter-spacing:.5em;color:#8a3a30;font-size:clamp(10px,2vw,15px);margin-bottom:26px}
+  .body{max-width:560px;line-height:1.6;font-size:clamp(12px,2.4vw,15px);color:#a89880;margin-bottom:28px}
+  .body b{color:#e0c9a0}
+  .btn{background:#2a0d0d;border:1px solid #8a3a30;color:#e8d9c4;font-family:inherit;font-size:clamp(14px,2.6vw,18px);letter-spacing:.3em;padding:14px 42px;cursor:pointer;margin:6px}
+  .btn:hover{background:#4a1515;box-shadow:0 0 18px rgba(160,32,32,.5)}
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5;display:none;font-size:13px;letter-spacing:.1em}
+  #obj{position:absolute;top:14px;left:0;right:0;text-align:center;color:#d8c4a4;text-shadow:0 0 8px #000;font-size:14px;letter-spacing:.2em}
+  #timer{position:absolute;top:38px;left:0;right:0;text-align:center;color:#7a5a48;font-size:11px;letter-spacing:.3em}
+  #bars{position:absolute;left:18px;bottom:16px;width:min(240px,40vw)}
+  .lbl{font-size:10px;color:#8a7560;margin:6px 0 3px;letter-spacing:.25em}
+  .bar{height:9px;background:#1a0f0c;border:1px solid #4a3228}
+  .fill{height:100%;transition:width .12s}
+  #hp .fill{background:#a83232}
+  #gz .fill{background:#c9a44a}
+  #msg{position:absolute;top:30%;left:0;right:0;text-align:center;color:#e8d9c4;font-size:clamp(16px,3.4vw,26px);letter-spacing:.25em;text-shadow:0 0 14px #a02020;opacity:0;transition:opacity .4s}
+  #gazeWarn{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(160,20,10,.55) 100%);opacity:0;transition:opacity .3s}
+  #prompt{position:absolute;bottom:22%;left:0;right:0;text-align:center;color:#d8c4a4;font-size:14px;letter-spacing:.2em;opacity:0;transition:opacity .2s}
+  #dmg{position:absolute;inset:0;background:rgba(140,10,5,.35);opacity:0}
+  #touchUI{position:fixed;inset:0;z-index:6;display:none;pointer-events:none}
+  .stick{position:absolute;bottom:60px;width:110px;height:110px;border:1px solid rgba(200,170,140,.35);border-radius:50%;pointer-events:auto}
+  #stickL{left:26px}#stickR{right:26px}
+  .knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(200,170,140,.25)}
+  #btnAct{position:absolute;right:44px;bottom:190px;width:72px;height:72px;border-radius:50%;border:1px solid rgba(220,120,90,.6);background:rgba(90,20,15,.5);color:#e8d9c4;font-family:inherit;font-size:11px;letter-spacing:.15em;pointer-events:auto}
+  .small{font-size:11px;color:#6a5544;margin-top:18px;letter-spacing:.15em;line-height:1.7}
+  #vign{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vign"></div>
+
+<div id="hud">
+  <div id="gazeWarn"></div>
+  <div id="dmg"></div>
+  <div id="obj">LIGHT THE THREE SIGNAL FIRES</div>
+  <div id="timer"></div>
+  <div id="bars">
+    <div class="lbl">VITALS</div><div class="bar" id="hp"><div class="fill" style="width:100%"></div></div>
+    <div class="lbl">ITS GAZE</div><div class="bar" id="gz"><div class="fill" style="width:0%"></div></div>
+  </div>
+  <div id="msg"></div>
+  <div id="prompt"></div>
+</div>
+
+<div id="touchUI">
+  <div class="stick" id="stickL"><div class="knob" id="knobL"></div></div>
+  <div class="stick" id="stickR"><div class="knob" id="knobR"></div></div>
+  <button id="btnAct">HOLD<br>USE</button>
+</div>
+
+<div class="ov" id="title">
+  <h1>REMINA</h1>
+  <div class="sub">THE HELLSTAR</div>
+  <div class="body">
+    It came out of the dark between the stars, and it is looking at you.<br><br>
+    The planet-thing hangs over the dead city. When its eye opens, <b>stay out of its sight</b> -
+    its gaze burns and calls the pale ones to you. <b>Light the three signal fires</b> to call the
+    escape pod, then reach the launch pad before the sky finishes falling.<br><br>
+    <b>Desktop:</b> WASD move &middot; mouse look &middot; hold E to kindle &middot; Shift run<br>
+    <b>Quest 3:</b> open in the headset browser and press ENTER VR &middot; left stick moves, right stick turns, hold trigger to kindle
+  </div>
+  <button class="btn" id="startBtn">DESCEND</button>
+  <div id="vrSlot"></div>
+  <div class="small">a game after Junji Ito's HELLSTAR REMINA &middot; headphones on, lights off</div>
+</div>
+
+<div class="ov" id="dead" style="display:none">
+  <h1 style="color:#a83232">IT SAW YOU</h1>
+  <div class="sub">THE CITY IS QUIET AGAIN</div>
+  <div class="body" id="deadBody"></div>
+  <button class="btn" id="retryBtn">TRY AGAIN</button>
+</div>
+
+<div class="ov" id="win" style="display:none">
+  <h1 style="color:#c9a44a">ESCAPE VELOCITY</h1>
+  <div class="sub">THE HELLSTAR TAKES THE EARTH BEHIND YOU</div>
+  <div class="body" id="winBody"></div>
+  <button class="btn" id="againBtn">DREAM IT AGAIN</button>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {VRButton} from 'three/addons/webxr/VRButton.js';
+
+// ---------- renderer / scene ----------
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.xr.enabled=true;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=0.85;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x070308);
+scene.fog=new THREE.FogExp2(0x0d0508,0.016);
+
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.08,6000);
+const rig=new THREE.Group(); rig.add(camera); rig.position.set(0,1.65,46); scene.add(rig);
+
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+// ---------- lights ----------
+scene.add(new THREE.AmbientLight(0x2a1418,1.4));
+const moon=new THREE.DirectionalLight(0x8a4030,0.7); moon.position.set(-40,80,-120); moon.castShadow=true;
+moon.shadow.mapSize.set(1024,1024); moon.shadow.camera.left=-80;moon.shadow.camera.right=80;moon.shadow.camera.top=80;moon.shadow.camera.bottom=-80;moon.shadow.camera.far=400;
+scene.add(moon);
+const hellGlow=new THREE.PointLight(0xff4a28,2.2,900,1.6); hellGlow.position.set(0,90,-260); scene.add(hellGlow);
+
+// ---------- ground ----------
+function groundTex(){const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d');
+g.fillStyle='#0e0a09';g.fillRect(0,0,256,256);
+for(let i=0;i<2200;i++){g.fillStyle=`rgba(${30+Math.random()*40|0},${18+Math.random()*16|0},${14+Math.random()*12|0},${Math.random()*.5})`;g.fillRect(Math.random()*256,Math.random()*256,2,2);}
+g.strokeStyle='rgba(60,30,24,.5)';for(let i=0;i<14;i++){g.beginPath();let x=Math.random()*256,y=Math.random()*256;g.moveTo(x,y);for(let j=0;j<5;j++){x+=(Math.random()-.5)*60;y+=(Math.random()-.5)*60;g.lineTo(x,y);}g.stroke();}
+const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(24,24);return t;}
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(360,360),new THREE.MeshStandardMaterial({map:groundTex(),roughness:.95,metalness:0}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+// ---------- dead city ----------
+const buildings=[]; // {mesh, box:Box3}
+const bMat=new THREE.MeshStandardMaterial({color:0x141013,roughness:.92,metalness:.05});
+const bMat2=new THREE.MeshStandardMaterial({color:0x1b1216,roughness:.9});
+function windowTex(){const cv=document.createElement('canvas');cv.width=64;cv.height=128;const g=cv.getContext('2d');
+g.fillStyle='#0b0809';g.fillRect(0,0,64,128);
+for(let y=6;y<122;y+=10)for(let x=5;x<58;x+=9){if(Math.random()<.10){g.fillStyle=Math.random()<.5?'rgba(255,120,60,.8)':'rgba(120,180,200,.5)';}else g.fillStyle='rgba(20,16,18,.9)';g.fillRect(x,y,6,7);}
+return new THREE.CanvasTexture(cv);}
+const wTex=windowTex();
+function addBuilding(x,z,w,h,d){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),Math.random()<.5?bMat:bMat2.clone());
+if(Math.random()<.55){m.material.map=wTex;m.material.needsUpdate=true;}
+m.position.set(x,h/2,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);
+const box=new THREE.Box3().setFromObject(m);buildings.push({mesh:m,box});
+// ruin: tilt a few
+if(Math.random()<.18){m.rotation.z=(Math.random()-.5)*.16;}
+return m;}
+(function city(){
+  const R=110;
+  for(let i=0;i<60;i++){
+    const a=Math.random()*Math.PI*2, r=18+Math.random()*R;
+    const x=Math.cos(a)*r, z=Math.sin(a)*r;
+    if(Math.hypot(x,z-46)<12) continue;           // spawn clearing
+    if(Math.hypot(x,z+140)<22) continue;          // pad clearing
+    addBuilding(x,z,5+Math.random()*8,7+Math.random()*30,5+Math.random()*8);
+  }
+  // inner ring of wrecks
+  for(let i=0;i<14;i++){const a=i/14*Math.PI*2;addBuilding(Math.cos(a)*34,Math.sin(a)*34,6,4+Math.random()*6,6);}
+})();
+
+// scattered debris / ribs of the city
+const debGeo=new THREE.BoxGeometry(1,1,1);
+for(let i=0;i<120;i++){const d=new THREE.Mesh(debGeo,bMat);const a=Math.random()*Math.PI*2,r=6+Math.random()*130;
+d.position.set(Math.cos(a)*r,.3,Math.sin(a)*r);d.scale.set(.6+Math.random()*2,.3+Math.random()*1.4,.6+Math.random()*2);
+d.rotation.y=Math.random()*7;d.castShadow=true;scene.add(d);}
+
+// ---------- the hellstar ----------
+const hellGroup=new THREE.Group(); scene.add(hellGroup);
+function planetTex(){const cv=document.createElement('canvas');cv.width=cv.height=512;const g=cv.getContext('2d');
+const grad=g.createRadialGradient(256,256,40,256,256,256);grad.addColorStop(0,'#7a2a1e');grad.addColorStop(.55,'#4a1610');grad.addColorStop(1,'#1c0705');
+g.fillStyle=grad;g.fillRect(0,0,512,512);
+// continents of meat
+for(let i=0;i<40;i++){g.fillStyle=`rgba(${90+Math.random()*60|0},${20+Math.random()*20|0},${14+Math.random()*16|0},${.12+Math.random()*.2})`;
+g.beginPath();g.ellipse(Math.random()*512,Math.random()*512,20+Math.random()*70,12+Math.random()*40,Math.random()*3,0,7);g.fill();}
+// veins
+g.strokeStyle='rgba(30,6,4,.75)';g.lineWidth=2;
+for(let i=0;i<90;i++){g.beginPath();let x=Math.random()*512,y=Math.random()*512;g.moveTo(x,y);
+for(let j=0;j<7;j++){x+=(Math.random()-.5)*90;y+=(Math.random()-.5)*90;g.lineTo(x,y);}g.stroke();}
+g.strokeStyle='rgba(200,80,50,.28)';g.lineWidth=1;
+for(let i=0;i<50;i++){g.beginPath();let x=Math.random()*512,y=Math.random()*512;g.moveTo(x,y);
+for(let j=0;j<6;j++){x+=(Math.random()-.5)*110;y+=(Math.random()-.5)*110;g.lineTo(x,y);}g.stroke();}
+return new THREE.CanvasTexture(cv);}
+const HELL_DIST0=1500, HELL_R=340;
+const hell=new THREE.Mesh(new THREE.SphereGeometry(HELL_R,48,32),new THREE.MeshStandardMaterial({map:planetTex(),roughness:.85,emissive:0x30100a,emissiveIntensity:.6}));
+hellGroup.add(hell);
+// the eye
+const eyeGroup=new THREE.Group(); hellGroup.add(eyeGroup);
+const sclera=new THREE.Mesh(new THREE.SphereGeometry(HELL_R*.34,32,24),new THREE.MeshStandardMaterial({color:0xd8c9a8,roughness:.4,emissive:0x504030,emissiveIntensity:.35}));
+sclera.scale.set(1,.72,.5); eyeGroup.add(sclera);
+const iris=new THREE.Mesh(new THREE.SphereGeometry(HELL_R*.16,24,18),new THREE.MeshStandardMaterial({color:0xb08a20,roughness:.3,emissive:0x6a4a08,emissiveIntensity:.8}));
+iris.position.z=HELL_R*.13; iris.scale.set(1,1,.45); eyeGroup.add(iris);
+const pupil=new THREE.Mesh(new THREE.SphereGeometry(HELL_R*.07,18,14),new THREE.MeshStandardMaterial({color:0x050303,roughness:.15}));
+pupil.position.z=HELL_R*.20; pupil.scale.set(1,1,.4); eyeGroup.add(pupil);
+// eyelids
+const lidMat=new THREE.MeshStandardMaterial({color:0x4a1610,roughness:.9});
+const lidTop=new THREE.Mesh(new THREE.SphereGeometry(HELL_R*.36,32,12,0,Math.PI*2,0,Math.PI*.42),lidMat); lidTop.scale.set(1.02,.8,.55); eyeGroup.add(lidTop);
+const lidBot=new THREE.Mesh(new THREE.SphereGeometry(HELL_R*.36,32,12,0,Math.PI*2,Math.PI*.58,Math.PI*.42),lidMat); lidBot.scale.set(1.02,.8,.55); eyeGroup.add(lidBot);
+eyeGroup.position.z=HELL_R*.94;
+// corona
+const corona=new THREE.Mesh(new THREE.SphereGeometry(HELL_R*1.12,32,24),new THREE.MeshBasicMaterial({color:0xff3a18,transparent:true,opacity:.10,side:THREE.BackSide}));
+hellGroup.add(corona);
+
+// ---------- stars ----------
+(function stars(){const n=900,pos=new Float32Array(n*3);
+for(let i=0;i<n;i++){const v=new THREE.Vector3().randomDirection().multiplyScalar(2800);pos.set([v.x,Math.abs(v.y)* (Math.random()<.85?1:-1),v.z],i*3);}
+const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x6a5048,size:2.2,sizeAttenuation:false})));})();
+
+// ---------- signal fires (beacons) ----------
+const beacons=[];
+const beaconPos=[[-64,-30],[58,-58],[4,-104]];
+function makeBeacon(x,z,i){
+  const grp=new THREE.Group(); grp.position.set(x,0,z); scene.add(grp);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(1.4,2,1.2,7),new THREE.MeshStandardMaterial({color:0x241a16,roughness:.9}));base.position.y=.6;base.castShadow=true;grp.add(base);
+  const pyre=new THREE.Mesh(new THREE.ConeGeometry(1,2.4,6),new THREE.MeshStandardMaterial({color:0x2e2018,roughness:1}));pyre.position.y=2.2;pyre.castShadow=true;grp.add(pyre);
+  const flame=new THREE.PointLight(0xff7a30,0,26,1.8); flame.position.y=3.4; grp.add(flame);
+  const orb=new THREE.Mesh(new THREE.SphereGeometry(.5,12,10),new THREE.MeshBasicMaterial({color:0x662200}));orb.position.y=3.1;orb.visible=false;grp.add(orb);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.35,.6,60,10,1,true),new THREE.MeshBasicMaterial({color:0xffaa50,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
+  beam.position.y=32; grp.add(beam);
+  beacons.push({grp,flame,orb,beam,lit:false,charge:0,x,z});
+  return grp;}
+beaconPos.forEach(([x,z],i)=>makeBeacon(x,z,i));
+
+// ---------- launch pad ----------
+const pad=new THREE.Group(); pad.position.set(0,0,-140); scene.add(pad);
+const padDisc=new THREE.Mesh(new THREE.CylinderGeometry(9,10,1,20),new THREE.MeshStandardMaterial({color:0x1c1a20,roughness:.7,metalness:.4}));padDisc.position.y=.5;padDisc.receiveShadow=true;pad.add(padDisc);
+const rocket=new THREE.Group(); pad.add(rocket);
+const bodyMat=new THREE.MeshStandardMaterial({color:0x8a8478,roughness:.4,metalness:.7});
+const rBody=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.7,11,14),bodyMat);rBody.position.y=7;rocket.add(rBody);
+const rNose=new THREE.Mesh(new THREE.ConeGeometry(1.5,3.4,14),new THREE.MeshStandardMaterial({color:0x6a2418,roughness:.5,metalness:.5}));rNose.position.y=14.2;rocket.add(rNose);
+for(let i=0;i<4;i++){const f=new THREE.Mesh(new THREE.BoxGeometry(.3,3.4,1.6),new THREE.MeshStandardMaterial({color:0x5a2018}));const a=i/4*Math.PI*2;f.position.set(Math.cos(a)*1.9,2.6,Math.sin(a)*1.9);f.rotation.y=-a;rocket.add(f);}
+const padLight=new THREE.PointLight(0x40c0ff,0,40,1.6); padLight.position.y=3; pad.add(padLight);
+const padBeam=new THREE.Mesh(new THREE.CylinderGeometry(2.4,3.4,80,14,1,true),new THREE.MeshBasicMaterial({color:0x50c8ff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));padBeam.position.y=40;pad.add(padBeam);
+
+// ---------- pale ones (wraiths) ----------
+const wraiths=[];
+function wraithTex(){const cv=document.createElement('canvas');cv.width=64;cv.height=128;const g=cv.getContext('2d');
+g.clearRect(0,0,64,128);g.fillStyle='rgba(216,208,196,.96)';
+g.beginPath();g.ellipse(32,30,13,20,0,0,7);g.fill();              // head
+g.beginPath();g.moveTo(20,44);g.quadraticCurveTo(32,40,44,44);g.lineTo(50,120);g.lineTo(14,120);g.closePath();g.fill(); // body
+g.fillStyle='#0a0508';
+g.beginPath();g.ellipse(26,28,3.4,5,0,0,7);g.fill();g.beginPath();g.ellipse(38,28,3.4,5,0,0,7);g.fill();  // eyes
+g.beginPath();g.ellipse(32,42,2.6,6.5,0,0,7);g.fill();             // mouth
+return new THREE.CanvasTexture(cv);}
+const wTexW=wraithTex();
+function spawnWraith(near){
+  const a=Math.random()*Math.PI*2;
+  const d=near? 26+Math.random()*14 : 60+Math.random()*50;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(1.7,3.4),new THREE.MeshBasicMaterial({map:wTexW,transparent:true,side:THREE.DoubleSide,depthWrite:false,opacity:.95}));
+  m.position.set(rig.position.x+Math.cos(a)*d,1.7,rig.position.z+Math.sin(a)*d);
+  scene.add(m); wraiths.push({m,speed:1.1+Math.random()*.9,bob:Math.random()*7});}
+function clearWraiths(){for(const w of wraiths)scene.remove(w.m);wraiths.length=0;}
+
+// ---------- audio (all procedural) ----------
+let AC=null,droneGain=null,gazeOsc=null,gazeGain=null,master=null;
+function initAudio(){if(AC)return;AC=new (window.AudioContext||window.webkitAudioContext)();
+master=AC.createGain();master.gain.value=.5;master.connect(AC.destination);
+droneGain=AC.createGain();droneGain.gain.value=.10;droneGain.connect(master);
+const o1=AC.createOscillator();o1.type='sawtooth';o1.frequency.value=41;
+const o2=AC.createOscillator();o2.type='sine';o2.frequency.value=55.3;
+const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=190;
+o1.connect(f);o2.connect(f);f.connect(droneGain);o1.start();o2.start();
+const lfo=AC.createOscillator();lfo.frequency.value=.07;const lg=AC.createGain();lg.gain.value=40;
+lfo.connect(lg);lg.connect(f.frequency);lfo.start();
+gazeOsc=AC.createOscillator();gazeOsc.type='sine';gazeOsc.frequency.value=2.4; // heartbeat lfo
+gazeGain=AC.createGain();gazeGain.gain.value=0;gazeOsc.connect(gazeGain);gazeGain.connect(master);gazeOsc.start();}
+function blip(freq,dur,vol,type){if(!AC)return;const o=AC.createOscillator(),g=AC.createGain();
+o.type=type||'sine';o.frequency.value=freq;g.gain.setValueAtTime(vol,AC.currentTime);
+g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);o.connect(g);g.connect(master);o.start();o.stop(AC.currentTime+dur);}
+function rumble(){if(!AC)return;const n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*1.6,AC.sampleRate),d=b.getChannelData(0);
+for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=90;const g=AC.createGain();g.gain.value=.5;
+n.buffer=b;n.connect(f);f.connect(g);g.connect(master);n.start();}
+
+// ---------- input ----------
+const keys={};let yaw=0,pitch=0,locked=false;
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')interactHeld=true;});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')interactHeld=false;});
+canvas.addEventListener('click',()=>{if(state==='PLAYING'&&!renderer.xr.isPresenting&&!isTouch)canvas.requestPointerLock();});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;});
+addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=Math.max(-1.4,Math.min(1.4,pitch));});
+let interactHeld=false;
+// touch
+const isTouch='ontouchstart'in window&&navigator.maxTouchPoints>0;
+const tMove={x:0,y:0},tLook={x:0,y:0};
+function stick(id,knob,vec){const el=document.getElementById(id),kn=document.getElementById(knob);let tid=null;
+el.addEventListener('touchstart',e=>{e.preventDefault();tid=e.changedTouches[0].identifier;},{passive:false});
+el.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier!==tid)continue;
+const r=el.getBoundingClientRect();let dx=(t.clientX-(r.left+r.width/2))/(r.width/2),dy=(t.clientY-(r.top+r.height/2))/(r.height/2);
+const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l;}vec.x=dx;vec.y=dy;kn.style.transform=`translate(${dx*32}px,${dy*32}px)`;}},{passive:false});
+const end=e=>{for(const t of e.changedTouches){if(t.identifier===tid){tid=null;vec.x=vec.y=0;kn.style.transform='';}}};
+el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);}
+if(isTouch){document.getElementById('touchUI').style.display='block';
+stick('stickL','knobL',tMove);stick('stickR','knobR',tLook);
+const ba=document.getElementById('btnAct');
+ba.addEventListener('touchstart',e=>{e.preventDefault();interactHeld=true;},{passive:false});
+ba.addEventListener('touchend',()=>interactHeld=false);}
+
+// VR controllers
+const ctrl0=renderer.xr.getController(0), ctrl1=renderer.xr.getController(1);
+rig.add(ctrl0,ctrl1);
+ctrl0.addEventListener('selectstart',()=>interactHeld=true);
+ctrl0.addEventListener('selectend',()=>interactHeld=false);
+ctrl1.addEventListener('selectstart',()=>interactHeld=true);
+ctrl1.addEventListener('selectend',()=>interactHeld=false);
+// simple controller glow
+for(const c of [ctrl0,ctrl1]){const g=new THREE.Mesh(new THREE.SphereGeometry(.03,8,8),new THREE.MeshBasicMaterial({color:0xff6a40}));c.add(g);}
+// VR HUD sprite
+const vrHudCv=document.createElement('canvas');vrHudCv.width=512;vrHudCv.height=128;
+const vrHudTex=new THREE.CanvasTexture(vrHudCv);
+const vrHud=new THREE.Mesh(new THREE.PlaneGeometry(.5,.125),new THREE.MeshBasicMaterial({map:vrHudTex,transparent:true,depthTest:false}));
+vrHud.position.set(0,-.28,-.7);camera.add(vrHud);vrHud.visible=false;
+function drawVrHud(){const g=vrHudCv.getContext('2d');g.clearRect(0,0,512,128);
+g.fillStyle='rgba(10,4,4,.6)';g.fillRect(0,0,512,128);
+g.font='22px monospace';g.fillStyle='#d8c4a4';g.textAlign='center';
+g.fillText(objective,256,36);
+g.fillStyle='#a83232';g.fillRect(106,58,300*hp/100,12);
+g.strokeStyle='#5a4038';g.strokeRect(106,58,300,12);
+g.fillStyle='#c9a44a';g.fillRect(106,82,300*gaze/100,10);
+g.strokeRect(106,82,300,10);vrHudTex.needsUpdate=true;}
+
+renderer.xr.addEventListener('sessionstart',()=>{vrHud.visible=true;});
+renderer.xr.addEventListener('sessionend',()=>{vrHud.visible=false;});
+
+// ---------- state ----------
+let state='TITLE';
+let hp=100,gaze=0,litCount=0,gameT=0,eyeOpen=false,eyeT=0,eyePhase='closed';
+let spawnT=8,shake=0,deadReason='',winT=0;
+const WORLD_R=150;
+let objective='LIGHT THE THREE SIGNAL FIRES';
+const $=id=>document.getElementById(id);
+
+// VRButton
+try{const vb=VRButton.createButton(renderer);vb.className='btn';vb.style.position='static';vb.style.margin='6px';
+vb.style.background='#1a0d2a';vb.style.border='1px solid #5a3a8a';vb.style.opacity='1';vb.style.fontFamily='inherit';
+$('vrSlot').appendChild(vb);}catch(e){}
+
+function show(id){['title','dead','win'].forEach(s=>$(s).style.display=s===id?'flex':'none');}
+function setMsg(t,hold){$('msg').textContent=t;$('msg').style.opacity=1;clearTimeout(setMsg._t);setMsg._t=setTimeout(()=>$('msg').style.opacity=0,hold||2600);}
+
+function startGame(){
+  initAudio();if(AC&&AC.state==='suspended')AC.resume();
+  hp=100;gaze=0;litCount=0;gameT=0;shake=0;spawnT=8;winT=0;
+  eyeOpen=false;eyePhase='closed';eyeT=4+Math.random()*4;
+  beacons.forEach(b=>{b.lit=false;b.charge=0;b.flame.intensity=0;b.orb.visible=false;b.beam.material.opacity=0;});
+  padLight.intensity=0;padBeam.material.opacity=0;clearWraiths();
+  rig.position.set(0,1.65,46);yaw=0;pitch=0;
+  objective='LIGHT THE THREE SIGNAL FIRES';
+  show(null);$('hud').style.display='block';state='PLAYING';
+  setMsg('IT HUNGERS');rumble();
+  if(!renderer.xr.isPresenting&&!isTouch)canvas.requestPointerLock();}
+$('startBtn').onclick=startGame;
+$('retryBtn').onclick=startGame;
+$('againBtn').onclick=startGame;
+
+function die(why){state='DEAD';deadReason=why;document.exitPointerLock&&document.exitPointerLock();
+$('deadBody').innerHTML=why+`<br><br>You lit ${litCount} of 3 signal fires and lasted ${Math.floor(gameT)} seconds.`;
+show('dead');blip(60,1.2,.5,'sawtooth');}
+function win(){state='WIN';document.exitPointerLock&&document.exitPointerLock();
+const score=Math.max(0,Math.floor(10000-gameT*10));
+$('winBody').innerHTML=`The pod tears free of the atmosphere as the hellstar's shadow closes over the continent.<br>Below, the eye finally stops watching you - it has a world to eat.<br><br>ESCAPE TIME: ${Math.floor(gameT/60)}:${String(Math.floor(gameT%60)).padStart(2,'0')} &middot; SCORE ${score}`;
+show('win');blip(523,.5,.3);setTimeout(()=>blip(784,.8,.3),300);}
+
+// segment vs building boxes (for gaze line of sight)
+const _v=new THREE.Vector3();
+function losBlocked(from,to){
+  const steps=24;
+  for(let i=1;i<steps;i++){_v.lerpVectors(from,to,i/steps);
+    for(const b of buildings){if(b.box.containsPoint(_v))return true;}}
+  return false;}
+
+// per-frame
+const clock=new THREE.Clock();
+const fwd=new THREE.Vector3(),rgt=new THREE.Vector3(),mv=new THREE.Vector3();
+function animate(){
+  const dt=Math.min(clock.getDelta(),.05);
+  const t=clock.elapsedTime;
+  if(state==='PLAYING'){
+    gameT+=dt;
+    // ----- hellstar approach: sky falls over 6.5 minutes -----
+    const prog=Math.min(gameT/390,1);
+    const dist=HELL_DIST0*(1-prog)+240*prog;
+    hellGroup.position.set(Math.sin(t*.02)*30,120+prog*160,-dist);
+    hell.rotation.y+=dt*.02;
+    hellGlow.position.copy(hellGroup.position).multiplyScalar(.4);
+    hellGlow.intensity=2+prog*4;
+    corona.material.opacity=.08+prog*.14;
+    // eye faces the player, eyelids animate
+    eyeGroup.lookAt(rig.position);
+    eyeT-=dt;
+    if(eyeT<=0){
+      if(eyePhase==='closed'){eyePhase='opening';eyeT=1.6;}
+      else if(eyePhase==='opening'){eyePhase='open';eyeT=7+Math.random()*7;}
+      else if(eyePhase==='open'){eyePhase='closing';eyeT=1.2;setMsg('THE EYE CLOSES',1500);}
+      else{eyePhase='closed';eyeT=5+Math.random()*6;}
+    }
+    const openTarget=(eyePhase==='open')?1:(eyePhase==='closed'?0:(eyePhase==='opening'?Math.min(1,1-eyeT/1.6):Math.max(0,eyeT/1.2)));
+    eyeOpen=openTarget>.6;
+    lidTop.scale.y=.8-(openTarget*.55);lidBot.scale.y=.8-(openTarget*.55);
+    lidTop.position.y=openTarget*HELL_R*.20;lidBot.position.y=-openTarget*HELL_R*.20;
+    pupil.lookAt(rig.position);
+
+    // ----- movement -----
+    let mx=0,mz=0,run=false;
+    if(renderer.xr.isPresenting){
+      const session=renderer.xr.getSession();
+      for(const src of session.inputSources){if(!src.gamepad)continue;
+        const ax=src.gamepad.axes;
+        if(src.handedness==='left'){mx=ax[2]||ax[0]||0;mz=ax[3]||ax[1]||0;}
+        if(src.handedness==='right'){const tx=ax[2]||ax[0]||0;if(Math.abs(tx)>.25)yaw-=tx*dt*2.4;}}
+    }else{
+      if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(keys.KeyA)mx-=1;if(keys.KeyD)mx+=1;
+      run=!!keys.ShiftLeft;
+      if(isTouch){mx+=tMove.x;mz+=tMove.y;yaw-=tLook.x*dt*2.6;pitch-=tLook.y*dt*1.8;pitch=Math.max(-1.2,Math.min(1.2,pitch));}
+    }
+    rig.rotation.y=yaw;
+    if(!renderer.xr.isPresenting){camera.rotation.x=pitch;}
+    const spd=(run?8.5:4.6)*(renderer.xr.isPresenting?.75:1);
+    const l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;}
+    fwd.set(0,0,-1).applyQuaternion(rig.quaternion);fwd.y=0;fwd.normalize();
+    rgt.set(1,0,0).applyQuaternion(rig.quaternion);rgt.y=0;rgt.normalize();
+    mv.copy(fwd).multiplyScalar(-mz).add(rgt.clone().multiplyScalar(mx));
+    rig.position.addScaledVector(mv,spd*dt);
+    // building collision (push out of AABBs, XZ)
+    for(const b of buildings){const bb=b.box;
+      if(rig.position.x>bb.min.x-.5&&rig.position.x<bb.max.x+.5&&rig.position.z>bb.min.z-.5&&rig.position.z<bb.max.z+.5&&rig.position.y<bb.max.y){
+        const dxl=rig.position.x-(bb.min.x-.5),dxr=(bb.max.x+.5)-rig.position.x;
+        const dzl=rig.position.z-(bb.min.z-.5),dzr=(bb.max.z+.5)-rig.position.z;
+        const m=Math.min(dxl,dxr,dzl,dzr);
+        if(m===dxl)rig.position.x=bb.min.x-.5;else if(m===dxr)rig.position.x=bb.max.x+.5;
+        else if(m===dzl)rig.position.z=bb.min.z-.5;else rig.position.z=bb.max.z+.5;}}
+    // world bounds
+    const rr=Math.hypot(rig.position.x,rig.position.z);
+    if(rr>WORLD_R){rig.position.x*=WORLD_R/rr;rig.position.z*=WORLD_R/rr;}
+    if(!renderer.xr.isPresenting)rig.position.y=1.65+Math.sin(t*8)*(l>.1?.04:0);
+
+    // ----- gaze -----
+    const eyePos=eyeGroup.getWorldPosition(new THREE.Vector3());
+    const toEye=_v.copy(eyePos).sub(rig.position).normalize();
+    const camDir=new THREE.Vector3();camera.getWorldDirection(camDir);
+    const seeing=eyeOpen&&camDir.dot(toEye)>-1; // eye always looks at player; LOS is what matters
+    let gazing=false;
+    if(eyeOpen){gazing=!losBlocked(eyePos,rig.position);}
+    if(gazing){gaze=Math.min(100,gaze+dt*(14+prog*10));
+      $('gazeWarn').style.opacity=gaze/130;
+      if(gazeGain)gazeGain.gain.value=gaze/100*.28;
+      if(gazeOsc)gazeOsc.frequency.value=2.4+gaze/100*3;
+      if(gaze>=100){hp-=dt*9;shake=Math.min(1,shake+dt*2);spawnT-=dt*3;}
+    }else{gaze=Math.max(0,gaze-dt*20);$('gazeWarn').style.opacity=0;if(gazeGain)gazeGain.gain.value=0;}
+
+    // ----- wraiths -----
+    spawnT-=dt;
+    if(spawnT<=0){spawnT=Math.max(6,16-prog*10-litCount*1.5);spawnWraith(gaze>60);}
+    for(let i=wraiths.length-1;i>=0;i--){const w=wraiths[i];
+      const wp=w.m.position,dx=rig.position.x-wp.x,dz=rig.position.z-wp.z,dd=Math.hypot(dx,dz);
+      if(dd>1.2){wp.x+=dx/dd*w.speed*(1+prog*.6)*dt;wp.z+=dz/dd*w.speed*(1+prog*.6)*dt;}
+      wp.y=1.7+Math.sin(t*2+w.bob)*.25;
+      w.m.lookAt(rig.position.x,wp.y,rig.position.z);
+      // lit beacons repel them
+      for(const b of beacons){if(b.lit&&Math.hypot(wp.x-b.x,wp.z-b.z)<9){wp.x+=(wp.x-b.x)*dt*.8;wp.z+=(wp.z-b.z)*dt*.8;}}
+      if(dd<1.5){hp-=22*dt;shake=Math.min(1,shake+dt*3);$('dmg').style.opacity=.6;}
+    }
+    $('dmg').style.opacity=Math.max(0,parseFloat($('dmg').style.opacity||0)-dt*1.4);
+
+    // ----- beacons / interact -----
+    let nearBeacon=null;
+    for(const b of beacons){if(b.lit)continue;
+      const d=Math.hypot(rig.position.x-b.x,rig.position.z-b.z);
+      if(d<4){nearBeacon=b;break;}}
+    if(nearBeacon){
+      $('prompt').textContent=renderer.xr.isPresenting?'HOLD TRIGGER TO KINDLE':'HOLD E TO KINDLE';
+      $('prompt').style.opacity=1;
+      if(interactHeld){nearBeacon.charge+=dt/2.4;if(Math.random()<dt*8)blip(220+nearBeacon.charge*300,.08,.06,'triangle');
+        if(nearBeacon.charge>=1){nearBeacon.lit=true;litCount++;
+          nearBeacon.flame.intensity=2.4;nearBeacon.orb.visible=true;nearBeacon.beam.material.opacity=.35;
+          blip(392,.4,.25);setTimeout(()=>blip(523,.6,.25),200);
+          for(const w of wraiths){const d=Math.hypot(w.m.position.x-nearBeacon.x,w.m.position.z-nearBeacon.z);if(d<14)w.dead=true;}
+          for(let i=wraiths.length-1;i>=0;i--)if(wraiths[i].dead){scene.remove(wraiths[i].m);wraiths.splice(i,1);}
+          if(litCount>=3){objective='REACH THE LAUNCH PAD';setMsg('THE POD ANSWERS. RUN.',3500);padLight.intensity=3;padBeam.material.opacity=.3;}
+          else{setMsg(`SIGNAL FIRE ${litCount} OF 3`,2500);objective=`SIGNAL FIRES LIT: ${litCount} / 3`;}
+        }}
+      else nearBeacon.charge=Math.max(0,nearBeacon.charge-dt);
+    }else $('prompt').style.opacity=0;
+    // beacon flames flicker
+    for(const b of beacons){if(b.lit){b.flame.intensity=2.1+Math.sin(t*11+b.x)*.5;b.orb.material.color.setHSL(.06+Math.sin(t*3)*.02,1,.5);}}
+
+    // ----- win check -----
+    if(litCount>=3){const d=Math.hypot(rig.position.x-pad.position.x,rig.position.z-pad.position.z);
+      if(d<8){winT+=dt;padLight.intensity=3+Math.sin(t*9)*1.2;
+        if(winT>1.4){win();}}
+      else winT=0;}
+
+    // ----- endgame pressure: at 6.5 min the hellstar arrives -----
+    if(prog>=1){setMsg('IT IS HERE',2000);hp-=dt*5;shake=Math.min(1,shake+dt);}
+
+    // ----- damage / death -----
+    shake=Math.max(0,shake-dt*1.6);
+    if(shake>0){camera.position.x=(Math.random()-.5)*shake*.1;camera.position.y=(Math.random()-.5)*shake*.1;}
+    else{camera.position.x=0;camera.position.y=0;}
+    if(hp<=0){die(gaze>=80?'Its gaze held you and would not let go, and the pale ones did the rest.':'The pale ones closed their cold hands over you.');}
+
+    // ----- hellstar rumble as it nears -----
+    if(prog>.5&&Math.random()<dt*(prog-.5)*1.2){rumble();shake=Math.min(1,shake+.25);}
+
+    // ----- HUD -----
+    $('hp').firstElementChild.style.width=Math.max(0,hp)+'%';
+    $('gz').firstElementChild.style.width=gaze+'%';
+    $('obj').textContent=objective;
+    const remain=Math.max(0,390-gameT);
+    $('timer').textContent=`IT ARRIVES IN ${Math.floor(remain/60)}:${String(Math.floor(remain%60)).padStart(2,'0')}`;
+    if(renderer.xr.isPresenting)drawVrHud();
+  }
+  renderer.render(scene,camera);
+}
+renderer.setAnimationLoop(animate);
+</script>
+</body>
+</html>
